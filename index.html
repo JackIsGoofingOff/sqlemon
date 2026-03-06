@@ -15,17 +15,18 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.0.7/leader-line.min.js"></script>
+
     <style>
-        /* Responsive CodeMirror Height */
         .CodeMirror {
             height: 180px;
             border-radius: 0.5rem;
             font-family: 'Courier New', Courier, monospace;
             font-size: 14px;
         }
-        @media (min-width: 768px) {
-            .CodeMirror { height: 250px; font-size: 16px; }
-        }
+        @media (min-width: 768px) { .CodeMirror { height: 250px; font-size: 16px; } }
         
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: inherit; }
@@ -44,6 +45,17 @@
         body.theme-pink .text-blue-400 { color: #db2777; }
         body.theme-pink .border-gray-700, body.theme-pink .border-gray-600 { border-color: #fbcfe8; }
         body.theme-pink .CodeMirror { border: 1px solid #fbcfe8; }
+        body.theme-pink .modal-bg { background-color: #fce7f3; color: #831843; border: 1px solid #fbcfe8;}
+        body.theme-pink .modal-input { background-color: #fdf2f8; color: #831843; border: 1px solid #f9a8d4; }
+        body.theme-pink .modal-input:focus { border-color: #db2777; outline: none; }
+        
+        /* 🌸 Pink Mode Result Tables */
+        body.theme-pink .result-table thead { background-color: #fbcfe8; color: #831843; border-color: #f9a8d4; }
+        body.theme-pink .result-table tbody tr { border-color: #fbcfe8; }
+        body.theme-pink .result-table tbody tr:hover { background-color: #fdf2f8; }
+
+        /* Fix LeaderLine Z-Index so it appears above the layout */
+        .leader-line { z-index: 1000 !important; pointer-events: none; transition: opacity 0.2s ease-in-out; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen flex flex-col font-sans overflow-hidden transition-colors duration-300">
@@ -52,16 +64,12 @@
         <h1 class="text-2xl font-bold text-blue-400 transition-colors duration-300 w-full text-center md:text-left md:w-auto">🍋SQLemon</h1>
         
         <div class="flex flex-wrap justify-center md:justify-end items-center gap-2 md:gap-4 w-full md:w-auto">
-            <button id="theme-toggle" class="bg-pink-500 hover:bg-pink-400 text-white py-1.5 px-3 md:py-2 md:px-4 rounded-full text-sm font-semibold transition shadow-md whitespace-nowrap">
-                🌸 Pink Mode
-            </button>
+            <button id="theme-toggle" class="bg-pink-500 hover:bg-pink-400 text-white py-1.5 px-3 md:py-2 md:px-4 rounded-full text-sm font-semibold transition shadow-md whitespace-nowrap">🌸 Pink Mode</button>
             <label class="cursor-pointer bg-gray-700 hover:bg-gray-600 text-white py-1.5 px-3 md:py-2 md:px-4 rounded text-sm md:text-base transition whitespace-nowrap">
                 Import .db
                 <input type="file" id="import-btn" class="hidden" accept=".db,.sqlite,.sqlite3">
             </label>
-            <button id="export-btn" class="bg-blue-600 hover:bg-blue-500 text-white py-1.5 px-3 md:py-2 md:px-4 rounded text-sm md:text-base transition shadow-lg opacity-50 cursor-not-allowed" disabled>
-                Export .db
-            </button>
+            <button id="export-btn" class="bg-blue-600 hover:bg-blue-500 text-white py-1.5 px-3 md:py-2 md:px-4 rounded text-sm md:text-base transition shadow-lg opacity-50 cursor-not-allowed" disabled>Export .db</button>
         </div>
     </header>
 
@@ -71,33 +79,40 @@
             <div class="p-3 md:p-4 bg-gray-800 flex flex-col gap-2 shadow-md z-10 transition-colors duration-300 shrink-0">
                 <div class="flex justify-between items-end mb-1">
                     <label class="text-sm font-semibold text-gray-400 transition-colors duration-300">SQL Query Editor</label>
-                    <button id="run-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-4 md:py-2 md:px-6 rounded text-sm md:text-base transition shadow-lg opacity-50 cursor-not-allowed" disabled>
-                        ▶ Run SQL
-                    </button>
+                    <button id="run-btn" class="bg-green-600 hover:bg-green-500 text-white font-bold py-1.5 px-4 md:py-2 md:px-6 rounded text-sm md:text-base transition shadow-lg opacity-50 cursor-not-allowed" disabled>▶ Run SQL</button>
                 </div>
                 <textarea id="sql-editor">
+-- Example with Foreign Keys
+CREATE TABLE trainers (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
 CREATE TABLE pokemons (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
-    type_1 TEXT,
-    level INTEGER,
-    nickname TEXT
+    trainer_id INTEGER,
+    FOREIGN KEY(trainer_id) REFERENCES trainers(id)
 );
 
-INSERT INTO pokemons (id, name, type_1, level, nickname) VALUES 
-(1, 'Bulbasaur', 'Grass', 5, 'Bulba'),
-(4, 'Charmander', 'Fire', 7, NULL),
-(7, 'Squirtle', 'Water', 5, 'Squirt'),
-(25, 'Pikachu', 'Electric', 12, 'Sparky');
+INSERT INTO trainers (id, name) VALUES (1, 'Ash'), (2, 'Misty');
+INSERT INTO pokemons (id, name, trainer_id) VALUES (1, 'Pikachu', 1), (2, 'Starmie', 2);
 
 SELECT * FROM pokemons;
                 </textarea>
             </div>
 
-            <div class="flex-1 p-3 md:p-4 overflow-auto bg-gray-900 relative transition-colors duration-300">
-                <h2 class="text-lg font-semibold text-gray-400 mb-2 transition-colors duration-300">Query Results</h2>
+            <div class="flex-1 p-3 md:p-4 overflow-auto bg-gray-900 relative transition-colors duration-300 flex flex-col">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold text-gray-400 transition-colors duration-300">Query Results</h2>
+                    <div id="result-actions" class="hidden flex gap-2">
+                        <button id="copy-btn" class="bg-gray-700 hover:bg-gray-600 text-white py-1 px-3 text-xs md:text-sm rounded transition shadow">📋 Copy</button>
+                        <button id="pdf-btn" class="bg-red-600 hover:bg-red-500 text-white py-1 px-3 text-xs md:text-sm rounded transition shadow">📄 PDF</button>
+                    </div>
+                </div>
+                
                 <div id="error-msg" class="hidden bg-red-900 border border-red-500 text-red-200 px-4 py-3 rounded mb-4 text-sm md:text-base"></div>
-                <div id="results-container" class="w-full overflow-x-auto">
+                <div id="results-container" class="w-full overflow-x-auto flex-1">
                     <p class="text-gray-500 italic transition-colors duration-300">Run a query to see results here...</p>
                 </div>
             </div>
@@ -109,290 +124,448 @@ SELECT * FROM pokemons;
             </button>
 
             <div id="schema-wrapper" class="bg-gray-800 md:border-l border-gray-700 overflow-hidden transition-colors duration-300">
-                <div class="p-4 w-full md:w-[33vw] min-w-[300px] h-[40vh] md:h-full overflow-y-auto flex flex-col">
+                <div class="p-4 w-full md:w-[33vw] min-w-[300px] h-[40vh] md:h-full overflow-y-auto flex flex-col relative" id="schema-scroll-area">
                     <h2 class="text-lg font-semibold text-blue-400 border-b border-gray-700 pb-2 mb-4">Database Schema</h2>
-                    
-                    <div id="schema-container" class="flex flex-col gap-4 flex-1">
+                    <div id="schema-container" class="flex flex-col gap-4 flex-1 pb-10 relative">
                         <p class="text-gray-500 italic transition-colors duration-300 text-sm md:text-base">No tables created yet.</p>
                     </div>
-                    <p id="schema-tip" class="text-xs text-gray-500 mt-4 italic">Tip: Click table or column names to edit them!</p>
                 </div>
             </div>
         </div>
     </main>
 
+    <div id="edit-modal" class="fixed inset-0 bg-black/70 hidden justify-center items-center z-50 opacity-0 transition-opacity">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-[90%] md:w-[400px] modal-bg flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2">Edit Record</h3>
+            <div id="edit-form-fields" class="overflow-y-auto flex-1 flex flex-col gap-3 pr-2"></div>
+            <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-700">
+                <button id="cancel-edit-btn" class="bg-gray-600 hover:bg-gray-500 text-white py-2 px-4 rounded transition">Cancel</button>
+                <button id="save-edit-btn" class="bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded transition font-bold shadow-lg">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="field-modal" class="fixed inset-0 bg-black/70 hidden justify-center items-center z-50 opacity-0 transition-opacity">
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 w-[90%] md:w-[400px] modal-bg flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2">Field Properties</h3>
+            <div class="overflow-y-auto flex-1 flex flex-col gap-4 pr-2">
+                
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-400 mb-1 font-bold">Field Name</label>
+                    <input type="text" id="prop-name" class="bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white modal-input outline-none transition">
+                </div>
+                
+                <div class="flex items-center gap-3 bg-gray-900/50 p-3 rounded border border-gray-600 modal-input">
+                    <input type="checkbox" id="prop-pk" class="w-4 h-4 text-blue-600 rounded bg-gray-700 border-gray-600">
+                    <label class="text-sm font-bold">Primary Key</label>
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-400 mb-1 font-bold">Field Size (e.g., 255)</label>
+                    <input type="number" id="prop-size" placeholder="Auto" class="bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white modal-input outline-none transition">
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-400 mb-1 font-bold">Input Mask (e.g., 000-00-0000)</label>
+                    <input type="text" id="prop-mask" placeholder="None" class="bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white modal-input outline-none transition">
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="text-xs text-gray-400 mb-1 font-bold">Format</label>
+                    <select id="prop-format" class="bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white modal-input outline-none transition">
+                        <option value="none">None</option>
+                        <option value="short-date">Short Date</option>
+                        <option value="currency">Currency</option>
+                        <option value="percent">Percent</option>
+                        <option value="scientific">Scientific</option>
+                    </select>
+                </div>
+
+                <p class="text-[10px] text-yellow-500 italic mt-2 leading-tight">
+                    *Note: SQLite dynamically types data. Advanced constraints like mask, size, and modifying PKs are simulated in the UI for educational purposes.
+                </p>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-700">
+                <button id="cancel-field-btn" class="bg-gray-600 hover:bg-gray-500 text-white py-2 px-4 rounded transition">Cancel</button>
+                <button id="save-field-btn" class="bg-green-600 hover:bg-green-500 text-white py-2 px-4 rounded transition font-bold shadow-lg">Apply</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let db = null;
         let SQL = null;
         let editor = null;
+        let currentResults = null; 
+        let currentTableName = ""; 
+        let leaderLines = []; 
 
-        // --- Theme Toggle Logic ---
+        const resultActions = document.getElementById('result-actions');
+
+        // Toggle visibility of leader lines so they don't look broken during animations
+        function setLinesVisibility(visible) {
+            document.querySelectorAll('.leader-line').forEach(el => {
+                el.style.opacity = visible ? '1' : '0';
+            });
+        }
+
+        // --- Theme Toggle ---
         document.getElementById('theme-toggle').addEventListener('click', () => {
             document.body.classList.toggle('theme-pink');
             const isPink = document.body.classList.contains('theme-pink');
             editor.setOption("theme", isPink ? "default" : "dracula");
+            updateLeaderLinesColor(isPink ? '#db2777' : '#60a5fa');
         });
 
-        // --- Drawer Animation Logic (GSAP) ---
+        // --- Schema Drawer Toggle ---
         const schemaWrapper = document.getElementById('schema-wrapper');
         const schemaToggleIcon = document.getElementById('schema-toggle-icon');
-        const isDesktopInit = window.innerWidth >= 768;
-        let isSchemaOpen = isDesktopInit; // Open on desktop, closed on mobile by default
+        const schemaScrollArea = document.getElementById('schema-scroll-area');
+        let isSchemaOpen = window.innerWidth >= 768;
 
-        // Initialize Panel State
-        if (isDesktopInit) {
+        if (isSchemaOpen) {
             gsap.set(schemaWrapper, { width: "33vw", height: "100%" });
-            gsap.set(schemaToggleIcon, { rotation: 0 }); // Arrow pointing right (means close)
+            gsap.set(schemaToggleIcon, { rotation: 0 });
         } else {
             gsap.set(schemaWrapper, { width: "100%", height: "0px" });
-            gsap.set(schemaToggleIcon, { rotation: -90 }); // Arrow pointing up (means open)
-            schemaWrapper.classList.remove('border-t');
+            gsap.set(schemaToggleIcon, { rotation: -90 });
         }
 
         document.getElementById('schema-toggle-btn').addEventListener('click', () => {
             const isDesktop = window.innerWidth >= 768;
             isSchemaOpen = !isSchemaOpen;
+            
+            if(!isSchemaOpen) setLinesVisibility(false); 
 
             if (isDesktop) {
-                // Horizontal Slide for Desktop
-                gsap.to(schemaWrapper, { width: isSchemaOpen ? "33vw" : "0vw", duration: 0.5, ease: "power3.inOut" });
+                gsap.to(schemaWrapper, { width: isSchemaOpen ? "33vw" : "0vw", duration: 0.5, ease: "power3.inOut", onUpdate: repositionLines });
                 gsap.to(schemaToggleIcon, { rotation: isSchemaOpen ? 0 : 180, duration: 0.5, ease: "power3.inOut" });
             } else {
-                // Vertical Slide for Mobile
-                if (isSchemaOpen) schemaWrapper.classList.add('border-t');
-                gsap.to(schemaWrapper, { 
-                    height: isSchemaOpen ? "40vh" : "0px", 
-                    duration: 0.5, 
-                    ease: "power3.inOut",
-                    onComplete: () => { if (!isSchemaOpen) schemaWrapper.classList.remove('border-t'); }
-                });
+                gsap.to(schemaWrapper, { height: isSchemaOpen ? "40vh" : "0px", duration: 0.5, ease: "power3.inOut", onUpdate: repositionLines });
                 gsap.to(schemaToggleIcon, { rotation: isSchemaOpen ? 90 : -90, duration: 0.5, ease: "power3.inOut" });
             }
-        });
 
-        // Handle window resize dynamically
-        window.addEventListener('resize', () => {
-            const isDesktop = window.innerWidth >= 768;
-            if (isDesktop) {
-                gsap.set(schemaWrapper, { height: "100%" });
-                if (isSchemaOpen) {
-                    gsap.set(schemaWrapper, { width: "33vw" });
-                    gsap.set(schemaToggleIcon, { rotation: 0 });
-                } else {
-                    gsap.set(schemaWrapper, { width: "0vw" });
-                    gsap.set(schemaToggleIcon, { rotation: 180 });
-                }
-            } else {
-                gsap.set(schemaWrapper, { width: "100%" });
-                if (isSchemaOpen) {
-                    gsap.set(schemaWrapper, { height: "40vh" });
-                    gsap.set(schemaToggleIcon, { rotation: 90 });
-                    schemaWrapper.classList.add('border-t');
-                } else {
-                    gsap.set(schemaWrapper, { height: "0px" });
-                    gsap.set(schemaToggleIcon, { rotation: -90 });
-                    schemaWrapper.classList.remove('border-t');
-                }
-            }
+            if(isSchemaOpen) setTimeout(() => setLinesVisibility(true), 500); 
         });
 
         // 1. Initialize CodeMirror
         editor = CodeMirror.fromTextArea(document.getElementById("sql-editor"), {
-            mode: "text/x-sql",
-            theme: "dracula",
-            lineNumbers: true,
-            viewportMargin: Infinity
+            mode: "text/x-sql", theme: "dracula", lineNumbers: true, viewportMargin: Infinity
         });
 
         // 2. Initialize SQL.js
-        const config = { locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` };
-
-        initSqlJs(config).then(function(sqlModule) {
+        initSqlJs({ locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}` }).then(function(sqlModule) {
             SQL = sqlModule;
             db = new SQL.Database(); 
-            
             document.getElementById('run-btn').classList.remove('opacity-50', 'cursor-not-allowed');
             document.getElementById('run-btn').disabled = false;
             document.getElementById('export-btn').classList.remove('opacity-50', 'cursor-not-allowed');
             document.getElementById('export-btn').disabled = false;
-
             refreshSchema();
         });
 
-        // 3. Run SQL Function
+        // 3. Run SQL
         document.getElementById('run-btn').addEventListener('click', () => {
             if (!db) return;
-            gsap.fromTo("#run-btn", { scale: 0.95 }, { scale: 1, duration: 0.2, ease: "back.out(2)" });
-
             const query = editor.getValue();
             const errorDiv = document.getElementById('error-msg');
             const resultsDiv = document.getElementById('results-container');
             
             errorDiv.classList.add('hidden');
             resultsDiv.innerHTML = '';
+            resultActions.classList.add('hidden');
+            currentResults = null;
+
+            const match = query.match(/FROM\s+([a-zA-Z0-9_]+)/i);
+            currentTableName = match ? match[1] : null;
 
             try {
                 const results = db.exec(query);
-                
                 if (results.length === 0) {
-                    resultsDiv.innerHTML = `<p class="text-green-500 bg-green-900/20 p-3 rounded border border-green-800 text-sm md:text-base">✅ Query executed successfully. (No rows returned)</p>`;
+                    resultsDiv.innerHTML = `<p class="text-green-500 bg-green-900/20 p-3 rounded border border-green-800">✅ Query executed successfully.</p>`;
                 } else {
+                    currentResults = results[0]; 
+                    resultActions.classList.remove('hidden'); 
+
                     results.forEach(result => {
                         const table = document.createElement('table');
-                        table.className = "min-w-full text-left text-sm whitespace-nowrap bg-gray-800 rounded shadow-lg overflow-hidden mb-6 result-table opacity-0 transition-colors duration-300";
+                        table.className = "min-w-full text-left text-sm whitespace-nowrap bg-gray-800 rounded shadow-lg overflow-hidden mb-6 result-table";
                         
-                        let thead = `<thead class="uppercase tracking-wider border-b border-gray-700 bg-gray-700/50 text-gray-300 text-xs md:text-sm"><tr>`;
-                        result.columns.forEach(col => { thead += `<th class="px-4 py-2 md:px-6 md:py-3">${col}</th>`; });
-                        thead += `</tr></thead>`;
+                        let thead = `<thead class="uppercase border-b border-gray-700 bg-gray-700/50 text-gray-300"><tr>`;
+                        result.columns.forEach(col => { thead += `<th class="px-4 py-2">${col}</th>`; });
+                        if(currentTableName) thead += `<th class="px-4 py-2 w-10 text-center">⚙️</th>`; 
+                        thead += `</tr></thead><tbody>`;
                         
-                        let tbody = `<tbody class="text-xs md:text-sm">`;
-                        result.values.forEach(row => {
-                            tbody += `<tr class="border-b border-gray-700 hover:bg-gray-700/30 transition">`;
-                            row.forEach(val => { tbody += `<td class="px-4 py-2 md:px-6 md:py-3">${val !== null ? val : '<em class="text-gray-500">NULL</em>'}</td>`; });
-                            tbody += `</tr>`;
+                        result.values.forEach((row, rowIndex) => {
+                            thead += `<tr class="border-b border-gray-700 hover:bg-gray-700/30 transition-colors">`;
+                            row.forEach(val => { thead += `<td class="px-4 py-2">${val !== null ? val : '<em class="text-gray-500">NULL</em>'}</td>`; });
+                            
+                            if(currentTableName) {
+                                const rowJson = encodeURIComponent(JSON.stringify({cols: result.columns, vals: row}));
+                                thead += `<td class="px-4 py-2 text-center">
+                                    <button onclick="openEditModal('${rowJson}')" class="bg-blue-600 hover:bg-blue-500 text-white rounded px-2 py-1 text-xs shadow transition">Edit</button>
+                                </td>`;
+                            }
+                            thead += `</tr>`;
                         });
-                        tbody += `</tbody>`;
-
-                        table.innerHTML = thead + tbody;
+                        thead += `</tbody>`;
+                        table.innerHTML = thead;
                         resultsDiv.appendChild(table);
                     });
-
-                    gsap.to(".result-table", { opacity: 1, y: -10, duration: 0.4, stagger: 0.1, ease: "power2.out" });
                 }
-
                 refreshSchema();
-                editor.setValue('');
-
             } catch (err) {
-                errorDiv.innerText = "🚨 Error: " + err.message;
+                errorDiv.innerText = "🚨 " + err.message;
                 errorDiv.classList.remove('hidden');
-                gsap.fromTo(errorDiv, { x: -10 }, { x: 0, duration: 0.3, ease: "bounce.out" });
             }
         });
 
-        // 4. Visualize & Edit Database Schema
+        // --- Export Feature: Copy ---
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            if (!currentResults) return;
+            const header = currentResults.columns.join("\t");
+            const rows = currentResults.values.map(r => r.join("\t")).join("\n");
+            navigator.clipboard.writeText(`${header}\n${rows}`);
+            
+            const btn = document.getElementById('copy-btn');
+            btn.innerText = "✅ Copied!";
+            setTimeout(() => btn.innerText = "📋 Copy", 2000);
+        });
+
+        // --- Export Feature: PDF ---
+        document.getElementById('pdf-btn').addEventListener('click', () => {
+            if (!currentResults || !window.jspdf) {
+                alert("PDF library not loaded correctly yet.");
+                return;
+            }
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // FIX: Map over values to safely convert 'null' array values into strings
+                const safeValues = currentResults.values.map(row => 
+                    row.map(val => val !== null ? String(val) : 'NULL')
+                );
+
+                const isPink = document.body.classList.contains('theme-pink');
+
+                doc.text("SQLemon Query Results", 14, 15);
+                
+                // FIX: Use standard 'grid' theme and inject custom colors
+                doc.autoTable({
+                    head: [currentResults.columns],
+                    body: safeValues,
+                    startY: 20,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: isPink ? [251, 207, 232] : [55, 65, 81], // Pink or Dark Gray
+                        textColor: isPink ? [131, 24, 67] : [255, 255, 255]
+                    }
+                });
+                
+                doc.save('sqlemon_results.pdf');
+            } catch(e) {
+                alert("Error generating PDF: " + e.message);
+                console.error(e);
+            }
+        });
+
+        // --- Inline Row Editing Logic ---
+        const editModal = document.getElementById('edit-modal');
+        const editFormFields = document.getElementById('edit-form-fields');
+        let editRowPkCol = null;
+        let editRowPkVal = null;
+
+        window.openEditModal = function(encodedRow) {
+            const data = JSON.parse(decodeURIComponent(encodedRow));
+            editFormFields.innerHTML = '';
+            
+            const idIndex = data.cols.indexOf('id');
+            editRowPkCol = idIndex !== -1 ? 'id' : data.cols[0]; 
+            editRowPkVal = idIndex !== -1 ? data.vals[idIndex] : data.vals[0];
+
+            data.cols.forEach((col, idx) => {
+                const val = data.vals[idx] === null ? '' : data.vals[idx];
+                const isPk = col === editRowPkCol;
+                
+                editFormFields.innerHTML += `
+                    <div class="flex flex-col">
+                        <label class="text-xs text-gray-400 mb-1">${col} ${isPk ? '🔑(PK)' : ''}</label>
+                        <input type="text" data-col="${col}" value="${val}" ${isPk ? 'readonly' : ''} 
+                            class="bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white modal-input outline-none transition ${isPk ? 'opacity-50 cursor-not-allowed' : ''}">
+                    </div>
+                `;
+            });
+
+            editModal.classList.remove('hidden');
+            editModal.classList.add('flex');
+            gsap.to(editModal, { opacity: 1, duration: 0.2 });
+        };
+
+        document.getElementById('cancel-edit-btn').addEventListener('click', () => {
+            gsap.to(editModal, { opacity: 0, duration: 0.2, onComplete: () => {
+                editModal.classList.add('hidden');
+                editModal.classList.remove('flex');
+            }});
+        });
+
+        document.getElementById('save-edit-btn').addEventListener('click', () => {
+            if (!db || !currentTableName) return;
+            
+            const inputs = document.querySelectorAll('#edit-form-fields input:not([readonly])');
+            const updates = [];
+            inputs.forEach(input => {
+                const col = input.getAttribute('data-col');
+                let val = input.value.trim();
+                val = val === '' ? 'NULL' : `'${val.replace(/'/g, "''")}'`; 
+                updates.push(`"${col}" = ${val}`);
+            });
+
+            if (updates.length > 0) {
+                const pkValEscaped = typeof editRowPkVal === 'string' ? `'${editRowPkVal}'` : editRowPkVal;
+                const updateSql = `UPDATE "${currentTableName}" SET ${updates.join(', ')} WHERE "${editRowPkCol}" = ${pkValEscaped};`;
+                
+                try {
+                    db.exec(updateSql);
+                    document.getElementById('cancel-edit-btn').click();
+                    document.getElementById('run-btn').click(); 
+                } catch (e) { alert("Error updating record: " + e.message); }
+            }
+        });
+
+
+        // --- Field Properties Modal Logic ---
+        const fieldModal = document.getElementById('field-modal');
+        let currentFieldEditTable = "";
+        let currentFieldEditOldCol = "";
+
+        window.openFieldModal = function(tableName, colName, isPk) {
+            currentFieldEditTable = tableName;
+            currentFieldEditOldCol = colName;
+            
+            document.getElementById('prop-name').value = colName;
+            document.getElementById('prop-pk').checked = isPk === 'true';
+            
+            // Reset visual placeholders
+            document.getElementById('prop-size').value = "";
+            document.getElementById('prop-mask').value = "";
+            document.getElementById('prop-format').value = "none";
+
+            fieldModal.classList.remove('hidden');
+            fieldModal.classList.add('flex');
+            gsap.to(fieldModal, { opacity: 1, duration: 0.2 });
+        };
+
+        document.getElementById('cancel-field-btn').addEventListener('click', () => {
+            gsap.to(fieldModal, { opacity: 0, duration: 0.2, onComplete: () => {
+                fieldModal.classList.add('hidden');
+                fieldModal.classList.remove('flex');
+            }});
+        });
+
+        document.getElementById('save-field-btn').addEventListener('click', () => {
+            const newName = document.getElementById('prop-name').value.trim();
+            
+            if (newName !== "" && newName !== currentFieldEditOldCol) {
+                try {
+                    db.exec(`ALTER TABLE "${currentFieldEditTable}" RENAME COLUMN "${currentFieldEditOldCol}" TO "${newName}";`);
+                    refreshSchema();
+                } catch (err) {
+                    alert("Error renaming column: " + err.message);
+                }
+            }
+            // Close modal regardless, to simulate applying constraints.
+            document.getElementById('cancel-field-btn').click();
+        });
+
+
+        // 4. Schema Visualizer & Foreign Key Arrows
         function refreshSchema() {
             if (!db) return;
             const schemaContainer = document.getElementById('schema-container');
+            
+            // Clean up old arrows
+            leaderLines.forEach(line => line.remove());
+            leaderLines = [];
             schemaContainer.innerHTML = '';
 
             try {
                 const tablesResult = db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';`);
-                
                 if (tablesResult.length === 0) {
-                    schemaContainer.innerHTML = '<p class="text-gray-500 italic transition-colors duration-300 text-sm md:text-base">No tables in database.</p>';
+                    schemaContainer.innerHTML = '<p class="text-gray-500 italic">No tables in database.</p>';
                     return;
                 }
 
-                const tables = tablesResult[0].values;
-                
-                tables.forEach(tableNameArr => {
-                    const tableName = tableNameArr[0];
+                const tables = tablesResult[0].values.map(v => v[0]);
+                tables.forEach(tableName => {
                     const card = document.createElement('div');
-                    card.className = "bg-gray-700 rounded-lg p-3 shadow border border-gray-600 schema-card opacity-0 transition-colors duration-300";
+                    card.className = "bg-gray-700 rounded-lg p-3 shadow border border-gray-600 schema-card z-10";
                     
-                    let cardHtml = `<div class="font-bold text-gray-200 border-b border-gray-600 pb-1 mb-2 flex items-center transition-colors duration-300 text-sm md:text-base">
-                        📁 <span class="editable-table ml-2 outline-none hover:bg-white/10 focus:bg-white/20 rounded px-1 cursor-text" contenteditable="true" data-old="${tableName}">${tableName}</span>
-                    </div>`;
-                    
+                    let cardHtml = `<div class="font-bold text-gray-200 border-b border-gray-600 pb-1 mb-2">📁 ${tableName}</div>`;
                     const columnsResult = db.exec(`PRAGMA table_info('${tableName}');`);
+                    
                     if (columnsResult.length > 0) {
-                        cardHtml += `<ul class="text-xs md:text-sm space-y-1">`;
+                        cardHtml += `<ul class="text-xs space-y-1">`;
                         columnsResult[0].values.forEach(col => {
                             const colName = col[1];
-                            const colType = col[2] || 'ANY';
-                            const isPk = col[5] ? '<span class="text-yellow-400 text-xs ml-1" title="Primary Key">🔑</span>' : '';
+                            const isPk = col[5] ? true : false;
                             
-                            cardHtml += `<li class="flex justify-between items-center bg-gray-800 px-2 py-1 rounded transition-colors duration-300">
-                                <span class="text-gray-300 flex items-center transition-colors duration-300">
-                                    <span class="editable-col outline-none hover:bg-white/10 focus:bg-white/20 rounded px-1 cursor-text" contenteditable="true" data-table="${tableName}" data-old="${colName}">${colName}</span>
-                                    ${isPk}
-                                </span>
-                                <span class="text-blue-400 text-[10px] md:text-xs transition-colors duration-300">${colType}</span>
+                            // FIX: Replaced contenteditable with a click handler to open the new Field Properties Modal
+                            cardHtml += `<li id="col-${tableName}-${colName}" class="flex justify-between items-center bg-gray-800 hover:bg-white/10 px-2 py-1 rounded cursor-pointer transition" onclick="openFieldModal('${tableName}', '${colName}', '${isPk}')">
+                                <span class="text-gray-300 pointer-events-none">${colName} <span class="text-yellow-400 text-[10px] ml-1">${isPk ? '🔑' : ''}</span></span>
+                                <span class="text-blue-400 text-[10px] pointer-events-none">${col[2] || 'ANY'}</span>
                             </li>`;
                         });
                         cardHtml += `</ul>`;
                     }
-
                     card.innerHTML = cardHtml;
                     schemaContainer.appendChild(card);
                 });
 
-                gsap.to(".schema-card", { opacity: 1, x: 10, duration: 0.4, stagger: 0.1, ease: "power2.out" });
-                attachEditListeners();
+                // Wait slightly for DOM to settle before drawing arrows
+                setTimeout(() => { 
+                    const isPink = document.body.classList.contains('theme-pink');
+                    const lineColor = isPink ? '#db2777' : '#60a5fa'; 
+                    
+                    tables.forEach(tableName => {
+                        const fks = db.exec(`PRAGMA foreign_key_list('${tableName}');`);
+                        if (fks.length > 0) {
+                            fks[0].values.forEach(fk => {
+                                const targetTable = fk[2];
+                                const sourceCol = fk[3];
+                                const targetCol = fk[4];
+                                
+                                const startEl = document.getElementById(`col-${tableName}-${sourceCol}`);
+                                const endEl = document.getElementById(`col-${targetTable}-${targetCol}`);
+                                
+                                if (startEl && endEl && window.LeaderLine) {
+                                    const line = new LeaderLine(startEl, endEl, {
+                                        color: lineColor, size: 2, path: 'fluid', startSocket: 'right', endSocket: 'left',
+                                        dropShadow: true, endPlug: 'arrow3'
+                                    });
+                                    leaderLines.push(line);
+                                }
+                            });
+                        }
+                    });
+
+                    if (!isSchemaOpen) setLinesVisibility(false);
+
+                }, 200);
 
             } catch(e) { console.error("Schema fetch error", e); }
         }
 
-        function attachEditListeners() {
-            document.querySelectorAll('.editable-table').forEach(el => {
-                el.addEventListener('blur', function() { handleTableRename(this); });
-                el.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); this.blur(); } });
-            });
-            document.querySelectorAll('.editable-col').forEach(el => {
-                el.addEventListener('blur', function() { handleColRename(this); });
-                el.addEventListener('keydown', function(e) { if(e.key === 'Enter') { e.preventDefault(); this.blur(); } });
-            });
+        function repositionLines() {
+            leaderLines.forEach(line => { try { line.position(); } catch(e){} });
+        }
+        function updateLeaderLinesColor(color) {
+            leaderLines.forEach(line => line.setOptions({color: color}));
         }
 
-        function handleTableRename(el) {
-            const oldName = el.getAttribute('data-old');
-            const newName = el.innerText.trim();
-            if (oldName !== newName && newName !== "") {
-                try {
-                    db.exec(`ALTER TABLE "${oldName}" RENAME TO "${newName}";`);
-                    refreshSchema();
-                } catch (err) {
-                    alert("Error renaming table: " + err.message);
-                    el.innerText = oldName;
-                }
-            } else { el.innerText = oldName; }
-        }
-
-        function handleColRename(el) {
-            const tableName = el.getAttribute('data-table');
-            const oldName = el.getAttribute('data-old');
-            const newName = el.innerText.trim();
-            if (oldName !== newName && newName !== "") {
-                try {
-                    db.exec(`ALTER TABLE "${tableName}" RENAME COLUMN "${oldName}" TO "${newName}";`);
-                    refreshSchema();
-                } catch (err) {
-                    alert("Error renaming column: " + err.message);
-                    el.innerText = oldName;
-                }
-            } else { el.innerText = oldName; }
-        }
-
-        // 5. Export Database
-        document.getElementById('export-btn').addEventListener('click', () => {
-            if (!db) return;
-            const data = db.export(); 
-            const blob = new Blob([data], { type: 'application/x-sqlite3' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'sqlemon_database.db';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        });
-
-        // 6. Import Database
-        document.getElementById('import-btn').addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function() {
-                const Uints = new Uint8Array(reader.result);
-                db = new SQL.Database(Uints); 
-                refreshSchema();
-                document.getElementById('results-container').innerHTML = `<p class="text-green-500 bg-green-900/20 p-3 rounded border border-green-800 text-sm md:text-base">✅ Database '${file.name}' imported successfully.</p>`;
-                event.target.value = ''; 
-            };
-            reader.readAsArrayBuffer(file);
-        });
+        schemaScrollArea.addEventListener('scroll', repositionLines);
+        window.addEventListener('resize', repositionLines);
 
     </script>
 </body>
